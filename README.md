@@ -19,6 +19,9 @@ uv run python manage.py load_stations     # load data/fuel_stations.csv (≈6.6k
 uv run python manage.py runserver
 ```
 
+Without uv: `python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt`,
+then the same `python manage.py ...` commands.
+
 Run the tests with:
 
 ```bash
@@ -83,7 +86,7 @@ Errors are returned as `{"error": "..."}`:
 
 ### `GET /api/route/map/?start=…&finish=…`
 
-Returns an HTML page with a Leaflet/OpenStreetMap map. It draws the route and numbered fuel stops, with a side panel listing each stop and the total cost. Every JSON response includes a link to this page in `map_url`. The page reuses the cached plan, so it makes no extra API calls.
+Returns an HTML page with a Leaflet map (Esri World Street Map tiles). It draws the route and numbered fuel stops, with a side panel listing each stop and the total cost. Every JSON response includes a link to this page in `map_url`. The page reuses the cached plan, so it makes no extra API calls.
 
 ### Postman
 
@@ -145,5 +148,5 @@ The $10 only influences which plan is chosen. `total_fuel_cost` is the money act
 - **Free services:**
   - Routing uses [OSRM](https://project-osrm.org/) (OpenStreetMap data). Set `OSRM_URL` to point at another server.
   - Free-text geocoding uses [Nominatim](https://nominatim.org/). Set `NOMINATIM_URL` to point at another server.
-  - Map tiles come from OpenStreetMap.
+  - Map tiles come from Esri's free World Street Map, which needs no API key. The public `tile.openstreetmap.org` servers block app and localhost traffic, and CARTO now requires a key.
 - **The cache is in local memory,** which suits a single process. Use Redis or Memcached in production.

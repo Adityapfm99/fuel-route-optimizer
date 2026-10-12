@@ -10,7 +10,7 @@ from . import geocoding, osrm, station_index
 from .fuel_planner import plan_fuel_stops
 from .geo import cumulative_miles
 
-GEOMETRY_SPACING_MILES = 0.5
+SIMPLIFY_TOLERANCE_DEGREES = 0.0005  # ~50 m
 
 
 def plan_trip(start_query: str, finish_query: str) -> dict:
@@ -88,11 +88,42 @@ def _build_plan(start_query: str, finish_query: str) -> dict:
 
 
 def _geometry(coords: np.ndarray, miles: np.ndarray) -> dict:
-    """GeoJSON LineString thinned to ~1 vertex per half mile (keeps payloads small)."""
-    targets = np.arange(0.0, miles[-1], GEOMETRY_SPACING_MILES)
-    idx = np.unique(np.concatenate((np.searchsorted(miles, targets), [len(miles) - 1])))
-    idx = idx[idx < len(coords)]
+    """GeoJSON LineString simplified with Douglas-Peucker (~50 m tolerance).
+
+    OSRM's full-resolution geometry has thousands of vertices; most lie on a
+    straight stretch and can go without changing how the line looks on a map.
+    """
+    keep = _simplify(coords, SIMPLIFY_TOLERANCE_DEGREES)
     return {
         "type": "LineString",
-        "coordinates": [[round(lng, 5), round(lat, 5)] for lat, lng in coords[idx]],
+        "coordinates": [[round(lng, 5), round(lat, 5)] for lat, lng in coords[keep]],
     }
+
+
+def _simplify(coords: np.ndarray, tolerance: float) -> np.ndarray:
+    """Indices of the vertices kept by Douglas-Peucker (iterative, vectorised per segment)."""
+    if len(coords) < 3:
+        return np.arange(len(coords))
+    # Work in a locally equal-area plane: shrink longitude by cos(latitude).
+    xy = np.column_stack((coords[:, 1] * np.cos(np.radians(coords[:, 0].mean())), coords[:, 0]))
+    keep = np.zeros(len(xy), dtype=bool)
+    keep[[0, -1]] = True
+    stack = [(0, len(xy) - 1)]
+    while stack:
+        first, last = stack.pop()
+        if last - first < 2:
+            continue
+        a, b = xy[first], xy[last]
+        points = xy[first + 1 : last]
+        ab = b - a
+        length = np.hypot(*ab)
+        if length == 0:
+            dist = np.hypot(*(points - a).T)
+        else:
+            dist = np.abs(ab[0] * (points[:, 1] - a[1]) - ab[1] * (points[:, 0] - a[0])) / length
+        farthest = int(dist.argmax())
+        if dist[farthest] > tolerance:
+            split = first + 1 + farthest
+            keep[split] = True
+            stack.extend(((first, split), (split, last)))
+    return np.flatnonzero(keep)

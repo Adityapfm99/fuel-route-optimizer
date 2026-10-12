@@ -11,6 +11,18 @@ from django.views.decorators.http import require_GET, require_http_methods
 from .services.exceptions import TripPlanningError
 from .services.trip_planner import plan_trip
 
+RESPONSE_ORDER = (
+    "start",
+    "finish",
+    "total_fuel_cost",
+    "total_gallons",
+    "map_url",
+    "fuel_stops",
+    "vehicle",
+    "meta",
+    "route",
+)
+
 
 def _read_params(request: HttpRequest) -> tuple[str, str]:
     if request.method == "POST" and request.content_type == "application/json":
@@ -44,7 +56,9 @@ def route_plan(request: HttpRequest) -> JsonResponse:
     query = urlencode({"start": start, "finish": finish})
     plan["map_url"] = request.build_absolute_uri(f"{reverse('route-map')}?{query}")
     plan["meta"]["elapsed_ms"] = round((time.perf_counter() - began) * 1000, 1)
-    return JsonResponse(plan)
+    # Summary first, the (long) route geometry last, so the answer is readable at a glance.
+    ordered = {key: plan[key] for key in RESPONSE_ORDER}
+    return JsonResponse(ordered)
 
 
 @require_GET
