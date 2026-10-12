@@ -11,6 +11,7 @@ whole trip costs exactly one external call (the route).
 """
 
 import csv
+import hashlib
 import re
 from functools import cache
 from pathlib import Path
@@ -67,7 +68,7 @@ def _ensure_in_usa(location: Location) -> None:
 
 
 def _nominatim(query: str) -> tuple[Location, bool]:
-    cache_key = f"geocode:{query.lower()}"
+    cache_key = "geocode:" + hashlib.sha256(query.lower().encode()).hexdigest()
     if cached := django_cache.get(cache_key):
         return cached, False
 

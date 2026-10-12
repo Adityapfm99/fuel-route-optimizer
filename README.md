@@ -53,12 +53,9 @@ curl "http://127.0.0.1:8000/api/route/?start=Chicago,%20IL&finish=Houston,%20TX"
 {
   "start":  { "query": "Chicago, IL", "name": "Chicago, IL", "lat": 41.88585, "lng": -87.61812 },
   "finish": { "query": "Houston, TX", "name": "Houston, TX", "lat": 29.68068, "lng": -95.4122 },
-  "vehicle": { "max_range_miles": 500.0, "miles_per_gallon": 10.0 },
-  "route": {
-    "distance_miles": 1094.1,
-    "duration_hours": 20.06,
-    "geometry": { "type": "LineString", "coordinates": [[-87.61811, 41.88551], "..."] }
-  },
+  "total_fuel_cost": 323.1,
+  "total_gallons": 109.41,
+  "map_url": "http://127.0.0.1:8000/api/route/map/?start=Chicago%2C+IL&finish=Houston%2C+TX",
   "fuel_stops": [
     { "stop_number": 1, "opis_id": 72577, "name": "QUIKTRIP #7205", "address": "I-80, EXIT 161",
       "city": "Lansing", "state": "IL", "lat": 41.566045, "lng": -87.544634,
@@ -68,12 +65,17 @@ curl "http://127.0.0.1:8000/api/route/?start=Chicago,%20IL&finish=Houston,%20TX"
     { "stop_number": 3, "name": "Quiktrip #7900", "city": "Texarkana", "state": "TX",
       "price_per_gallon": 2.857, "route_mile": 796.1, "gallons": 29.8, "cost": 85.16, "...": "..." }
   ],
-  "total_gallons": 109.41,
-  "total_fuel_cost": 323.1,
+  "vehicle": { "max_range_miles": 500.0, "miles_per_gallon": 10.0 },
   "meta": { "stations_considered": 179, "external_api_calls": 1, "cached": false, "elapsed_ms": 2092.6 },
-  "map_url": "http://127.0.0.1:8000/api/route/map/?start=Chicago%2C+IL&finish=Houston%2C+TX"
+  "route": {
+    "distance_miles": 1094.1,
+    "duration_hours": 20.06,
+    "geometry": { "type": "LineString", "coordinates": [[-87.61811, 41.88551], "..."] }
+  }
 }
 ```
+
+The response lists the summary first and the route line last. The line is simplified to about 50 m accuracy to keep the payload small.
 
 Errors are returned as `{"error": "..."}`:
 
@@ -91,6 +93,7 @@ Returns an HTML page with a Leaflet map (Esri World Street Map tiles). It draws 
 ### Postman
 
 Import `postman/fuel-route.postman_collection.json`. Its `baseUrl` variable defaults to `http://127.0.0.1:8000`.
+The route requests include tests: gallons cover the distance, stops are at most 500 miles apart, and at most one external call is made. To run them all at once, use **Run collection**.
 
 ## How it works
 
