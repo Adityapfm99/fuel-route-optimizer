@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ plan.start.name }} → {{ plan.finish.name }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #map { position: absolute; inset: 0 360px 0 0; }
+    #panel { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; overflow-y: auto;
+             padding: 16px; box-sizing: border-box; background: #fafafa; border-left: 1px solid #ddd; }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    .summary { font-size: 14px; margin-bottom: 12px; }
+    .total { font-size: 22px; font-weight: 600; }
+    ol { padding-left: 20px; font-size: 13px; }
+    li { margin-bottom: 10px; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="panel">
+    <h1>{{ plan.start.name }} → {{ plan.finish.name }}</h1>
+    <div class="summary">
+      {{ plan.route.distance_miles }} mi · {{ plan.route.duration_hours }} h driving<br>
+      <span class="total">${{ plan.total_fuel_cost }}</span>
+      <span class="muted">for {{ plan.total_gallons }} gal @ {{ plan.vehicle.miles_per_gallon }} mpg</span>
+    </div>
+    <ol>
+      {% for stop in plan.fuel_stops %}
+      <li>
+        <strong>{{ stop.name }}</strong><br>
+        {{ stop.city }}, {{ stop.state }} · mile {{ stop.route_mile }}<br>
+        <span class="muted">${{ stop.price_per_gallon }}/gal · {{ stop.gallons }} gal · ${{ stop.cost }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  {{ plan|json_script:"plan-data" }}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const plan = JSON.parse(document.getElementById("plan-data").textContent);
+    const map = L.map("map");
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    const line = L.geoJSON(plan.route.geometry, { style: { color: "#2563eb", weight: 5 } }).addTo(map);
+    map.fitBounds(line.getBounds(), { padding: [30, 30] });
+
+    L.marker([plan.start.lat, plan.start.lng]).addTo(map).bindPopup(`<b>Start</b><br>${plan.start.name}`);
+    L.marker([plan.finish.lat, plan.finish.lng]).addTo(map).bindPopup(`<b>Finish</b><br>${plan.finish.name}`);
+
+    plan.fuel_stops.forEach((s) => {
+      L.circleMarker([s.lat, s.lng], { radius: 9, color: "#b45309", fillColor: "#f59e0b", fillOpacity: 0.9 })
+        .addTo(map)
+        .bindTooltip(String(s.stop_number), { permanent: true, direction: "center", className: "" })
+        .bindPopup(`<b>${s.stop_number}. ${s.name}</b><br>${s.city}, ${s.state}<br>` +
+                   `$${s.price_per_gallon}/gal · ${s.gallons} gal · $${s.cost}`);
+    });
+  </script>
+</body>
+</html>

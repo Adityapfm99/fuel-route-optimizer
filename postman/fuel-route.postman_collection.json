@@ -1,0 +1,260 @@
+{
+  "info": {
+    "name": "Fuel Route Optimizer",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Route + cheapest fuel stops (500 mi range, 10 mpg) between two US locations."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Chicago, IL → Houston, TX",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/route/?start=Chicago, IL&finish=Houston, TX",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "Chicago, IL"
+            },
+            {
+              "key": "finish",
+              "value": "Houston, TX"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('gallons cover the distance at 10 mpg', () => pm.expect(d.total_gallons).to.be.closeTo(d.route.distance_miles / 10, 0.1));",
+              "pm.test('stops are at most 500 miles apart', () => {",
+              "  const m = [0, ...d.fuel_stops.map(s => s.route_mile), d.route.distance_miles];",
+              "  for (let i = 2; i < m.length; i++) pm.expect(m[i] - m[i - 1]).to.be.at.most(500);",
+              "});",
+              "pm.test('at most one external API call', () => pm.expect(d.meta.external_api_calls).to.be.at.most(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "New York, NY → Los Angeles, CA",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/route/?start=New York, NY&finish=Los Angeles, CA",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "New York, NY"
+            },
+            {
+              "key": "finish",
+              "value": "Los Angeles, CA"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('gallons cover the distance at 10 mpg', () => pm.expect(d.total_gallons).to.be.closeTo(d.route.distance_miles / 10, 0.1));",
+              "pm.test('stops are at most 500 miles apart', () => {",
+              "  const m = [0, ...d.fuel_stops.map(s => s.route_mile), d.route.distance_miles];",
+              "  for (let i = 2; i < m.length; i++) pm.expect(m[i] - m[i - 1]).to.be.at.most(500);",
+              "});",
+              "pm.test('at most one external API call', () => pm.expect(d.meta.external_api_calls).to.be.at.most(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Coordinates: Seattle → Miami",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/route/?start=47.6062,-122.3321&finish=25.7617,-80.1918",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "47.6062,-122.3321"
+            },
+            {
+              "key": "finish",
+              "value": "25.7617,-80.1918"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('gallons cover the distance at 10 mpg', () => pm.expect(d.total_gallons).to.be.closeTo(d.route.distance_miles / 10, 0.1));",
+              "pm.test('stops are at most 500 miles apart', () => {",
+              "  const m = [0, ...d.fuel_stops.map(s => s.route_mile), d.route.distance_miles];",
+              "  for (let i = 2; i < m.length; i++) pm.expect(m[i] - m[i - 1]).to.be.at.most(500);",
+              "});",
+              "pm.test('at most one external API call', () => pm.expect(d.meta.external_api_calls).to.be.at.most(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST JSON: Denver, CO → Dallas, TX",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"start\": \"Denver, CO\",\n  \"finish\": \"Dallas, TX\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/route/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "Map (HTML): New York, NY → Los Angeles, CA",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/route/map/?start=New York, NY&finish=Los Angeles, CA",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            "map",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "New York, NY"
+            },
+            {
+              "key": "finish",
+              "value": "Los Angeles, CA"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Error: location outside USA (Paris, France)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/route/?start=48.8566,2.3522&finish=Chicago, IL",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "48.8566,2.3522"
+            },
+            {
+              "key": "finish",
+              "value": "Chicago, IL"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Error: missing finish",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/route/?start=Chicago, IL",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "route",
+            ""
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "Chicago, IL"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
