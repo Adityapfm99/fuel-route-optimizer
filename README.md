@@ -22,14 +22,28 @@ uv run python manage.py runserver
 Without uv: `python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt`,
 then the same `python manage.py ...` commands.
 
-Run the tests with:
+`data/fuel_stations.csv` is already geocoded and committed. To rebuild it from the raw price file, run
+`uv run python scripts/geocode_stations.py <us_cities.csv> data/fuel_prices.csv data/fuel_stations.csv`.
+
+## Tests
 
 ```bash
 uv run pytest
 ```
 
-`data/fuel_stations.csv` is already geocoded and committed. To rebuild it from the raw price file, run
-`uv run python scripts/geocode_stations.py <us_cities.csv> data/fuel_prices.csv data/fuel_stations.csv`.
+There are 48 tests, and they run in under a second. They never call the internet: OSRM and Nominatim are mocked, and database tests use a temporary test database.
+
+| File | What it checks |
+|---|---|
+| `test_fuel_planner.py` | The stop-choosing algorithm: buys only enough to reach a cheaper station, fills up before a pricier one, skips 1-gallon stops, never exceeds 500 miles between stops, reports an error when a gap is too long or no station is near the start |
+| `test_api.py` | The `/api/route/` and `/api/route/map/` endpoints end to end with routing mocked: response shape, gallons = distance / 10, one external call, caching, POST JSON, and the 400 / 422 / 502 errors |
+| `test_trip_planner.py` | Repeated requests are cached regardless of case and spacing; the route line is simplified without losing corners |
+| `test_station_index.py` | Finds stations within 10 miles of the route, with the correct route mile and detour, ordered along the route |
+| `test_geocoding.py` | `lat,lng` and `City, ST` inputs make no network call; free text calls Nominatim once and is cached; places outside the USA and unknown places are rejected |
+| `test_osrm.py` | Parses the OSRM response (meters to miles, `[lng, lat]` to `(lat, lng)`), makes one request, and turns timeouts and bad responses into clear errors |
+| `test_geo.py` | Distance helpers and the USA bounding check (including Alaska and Hawaii) |
+
+Shared fixtures (a clean cache, a station factory and a fake straight route) are in `fuelroute/tests/conftest.py`.
 
 ## Endpoints
 
